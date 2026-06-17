@@ -1,0 +1,10 @@
+node_modules/
+.env
+certs/*.crt
+certs/*.pem
+certs/*.key
+certs/*.csr
+certs/*.pfx
+certs/*.p12
+*.log
+.DS_Store

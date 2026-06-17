@@ -1,0 +1,13 @@
+Colocá acá tus archivos reales de ARCA:
+
+1) certificado.crt   -> Certificado descargado desde ARCA.
+2) privada.key       -> Clave privada usada para generar el CSR.
+
+No compartas estos archivos.
+No los subas a GitHub.
+No los mandes por WhatsApp.
+
+El archivo .env debe apuntar a estos nombres, por ejemplo:
+
+ARCA_CERT_PATH=./certs/certificado.crt
+ARCA_KEY_PATH=./certs/privada.key

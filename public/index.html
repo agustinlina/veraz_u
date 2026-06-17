@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Consulta CUIT/CUIL/DNI ARCA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">ARCA · Constancia de inscripción</p>
+        <h1>Consulta CUIT/CUIL/DNI</h1>
+        <p class="subtitle">
+          Buscá contribuyentes por CUIT, CUIL o DNI y visualizá la información como informe.
+        </p>
+      </div>
+
+      <div class="status-pill">
+        <span class="dot"></span>
+        Producción
+      </div>
+    </header>
+
+    <section class="search-card">
+      <form id="form" class="search-form">
+        <div class="field">
+          <label for="cuit">CUIT, CUIL o DNI a consultar</label>
+          <input
+            id="cuit"
+            name="cuit"
+            type="text"
+            placeholder="Ej: 30716717565 o 42688736"
+            autocomplete="off"
+            inputmode="numeric"
+          >
+        </div>
+
+        <button type="submit" class="primary-button">
+          Buscar constancia
+        </button>
+      </form>
+
+      <div class="tools">
+        <button id="btnHealth" type="button">App</button>
+        <button id="btnDebug" type="button">Config</button>
+        <button id="btnDummy" type="button">Dummy</button>
+        <button id="btnLogin" type="button">WSAA</button>
+      </div>
+    </section>
+
+    <section id="state" class="state-card">
+      <h2>Esperando consulta</h2>
+      <p>Ingresá un CUIT, CUIL o DNI para generar el informe.</p>
+    </section>
+
+    <section id="report" class="report hidden"></section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
