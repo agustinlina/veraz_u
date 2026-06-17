@@ -971,7 +971,7 @@ btnDummy.addEventListener('click', async () => {
     showState('Error', error.message, 'error')
   }
 })
-
+console.log("ok")
 btnLogin.addEventListener('click', async () => {
   try {
     const data = await requestJson('/api/login-test')
