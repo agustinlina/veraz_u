@@ -1,96 +1,100 @@
-const path = require('path');
 const fs = require('fs');
-const dotenv = require('dotenv');
+const path = require('path');
 
-dotenv.config({
-  path: path.resolve(process.cwd(), '.env')
-});
+require('dotenv').config();
 
 function required(name) {
   const value = process.env[name];
 
-  if (!value || !String(value).trim()) {
+  if (!value) {
     throw new Error(`Falta configurar ${name} en el archivo .env`);
   }
 
-  return String(value).trim();
+  return value;
 }
 
-const arcaEnv = required('ARCA_ENV').toLowerCase();
+function optional(name, fallback = '') {
+  const value = process.env[name];
 
-if (!['prod', 'homo'].includes(arcaEnv)) {
-  throw new Error('ARCA_ENV inválido. Debe ser "prod" o "homo". No pongas el alias ahí.');
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  return value;
 }
 
-const isProd = arcaEnv === 'prod';
+function bool(name, fallback = false) {
+  const value = process.env[name];
 
-const certPath = path.resolve(process.cwd(), required('ARCA_CERT_PATH'));
-const keyPath = path.resolve(process.cwd(), required('ARCA_KEY_PATH'));
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
 
-const secondaryPersonApiEnabled = String(process.env.SECONDARY_PERSON_API_ENABLED || 'true')
-  .trim()
-  .toLowerCase() === 'true';
+  return String(value).trim().toLowerCase() === 'true';
+}
 
-const secondaryPersonApiUrl = String(
-  process.env.SECONDARY_PERSON_API_URL ||
-  'https://clientes.credicuotas.com.ar/v1/onboarding/resolvecustomers'
-).trim();
+function normalizePemText(value) {
+  if (!value) return '';
 
-const bcraApiEnabled = String(process.env.BCRA_API_ENABLED || 'true')
-  .trim()
-  .toLowerCase() === 'true';
+  return String(value)
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim() + '\n';
+}
 
-const bcraApiBaseUrl = String(
-  process.env.BCRA_API_BASE_URL || 'https://api.bcra.gob.ar'
-).trim();
+function writeSecretTextToTmp(filename, content) {
+  if (!content) return null;
 
-const config = {
-  env: arcaEnv,
-  isProd,
+  const normalizedContent = normalizePemText(content);
+  const tmpPath = path.join('/tmp', filename);
 
-  serviceId: 'ws_sr_constancia_inscripcion',
+  fs.writeFileSync(tmpPath, normalizedContent, 'utf8');
 
-  wsaaUrl: isProd
-    ? 'https://wsaa.afip.gov.ar/ws/services/LoginCms'
-    : 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms',
+  return tmpPath;
+}
 
-  constanciaUrl: isProd
-    ? 'https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA5'
-    : 'https://awshomo.afip.gov.ar/sr-padron/webservices/personaServiceA5',
+const arcaEnv = optional('ARCA_ENV', 'prod');
+
+const certPathFromText = writeSecretTextToTmp(
+  'arca-certificado.crt',
+  process.env.ARCA_CERT_TEXT
+);
+
+const keyPathFromText = writeSecretTextToTmp(
+  'arca-privada.key',
+  process.env.ARCA_KEY_TEXT
+);
+
+const certPath = certPathFromText || optional('ARCA_CERT_PATH', './certs/certificado.crt');
+const keyPath = keyPathFromText || optional('ARCA_KEY_PATH', './certs/privada_BL2631071411367.key');
+
+module.exports = {
+  arcaEnv,
 
   cuitRepresentada: required('ARCA_CUIT_REPRESENTADA'),
 
   certPath,
   keyPath,
 
-  opensslBin: process.env.OPENSSL_BIN && process.env.OPENSSL_BIN.trim()
-    ? process.env.OPENSSL_BIN.trim()
-    : 'openssl',
+  opensslBin: optional('OPENSSL_BIN', 'openssl'),
 
-  secondaryPersonApiEnabled,
-  secondaryPersonApiUrl,
+  secondaryPersonApiEnabled: bool('SECONDARY_PERSON_API_ENABLED', true),
+  secondaryPersonApiUrl: optional(
+    'SECONDARY_PERSON_API_URL',
+    'https://clientes.credicuotas.com.ar/v1/onboarding/resolvecustomers'
+  ),
 
-  bcraApiEnabled,
-  bcraApiBaseUrl,
+  bcraApiEnabled: bool('BCRA_API_ENABLED', false),
+  bcraApiBaseUrl: optional('BCRA_API_BASE_URL', 'https://api.bcra.gob.ar'),
 
-  port: Number(process.env.PORT || 3000)
-};
+  wsaaService: optional('ARCA_WSAA_SERVICE', 'ws_sr_constancia_inscripcion'),
 
-function verifyStaticConfig() {
-  if (!/^\d{11}$/.test(config.cuitRepresentada)) {
-    throw new Error(`ARCA_CUIT_REPRESENTADA debe tener 11 dígitos. Valor actual: ${config.cuitRepresentada}`);
-  }
+  wsaaUrl: arcaEnv === 'prod'
+    ? 'https://wsaa.afip.gov.ar/ws/services/LoginCms'
+    : 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms',
 
-  if (!fs.existsSync(config.certPath)) {
-    throw new Error(`No existe el certificado en: ${config.certPath}`);
-  }
-
-  if (!fs.existsSync(config.keyPath)) {
-    throw new Error(`No existe la clave privada en: ${config.keyPath}`);
-  }
-}
-
-module.exports = {
-  ...config,
-  verifyStaticConfig
+  constanciaUrl: arcaEnv === 'prod'
+    ? 'https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA5'
+    : 'https://awshomo.afip.gov.ar/sr-padron/webservices/personaServiceA5'
 };
